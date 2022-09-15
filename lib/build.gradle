@@ -1,0 +1,28 @@
+plugins {
+    id 'java-library'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'com.vanniktech.maven.publish'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+dependencies {
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib")
+
+    // newer versions than okhttp 3.12.x need minSdk 21 on Android
+    api("com.squareup.okhttp3:okhttp:3.12.13")
+    api("com.fasterxml.jackson.core:jackson-databind:2.13.4")
+
+    testImplementation('org.jetbrains.kotlin:kotlin-test')
+}
+
+test {
+    useJUnitPlatform()
+}
+
+signing {
+    useGpgCmd()
+}
