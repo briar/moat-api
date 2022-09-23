@@ -1,6 +1,6 @@
 # Tor Moat Api Wrapper
 
-A tiny wrapper around Tor Project's Moat Circumvention Settings API
+A tiny wrapper around Tor Project's [Moat Circumvention Settings API](https://gitlab.torproject.org/tpo/anti-censorship/rdsys/-/blob/main/doc/moat.md)
 
 # How to use
 

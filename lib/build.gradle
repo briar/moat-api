@@ -9,6 +9,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+configurations {
+    tor
+}
+
 dependencies {
     compileOnly("org.jetbrains.kotlin:kotlin-stdlib")
 
@@ -17,6 +21,7 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-databind:2.13.4")
 
     testImplementation('org.jetbrains.kotlin:kotlin-test')
+    tor( "org.briarproject:obfs4proxy-linux:0.0.14")
 }
 
 test {
@@ -25,4 +30,29 @@ test {
 
 signing {
     useGpgCmd()
+}
+
+def torBinariesDir = 'src/test/resources'
+
+task cleanTorBinaries {
+    doLast {
+        delete fileTree(torBinariesDir) { include '*.zip' }
+    }
+}
+
+clean.dependsOn cleanTorBinaries
+
+task unpackTorBinaries {
+    doLast {
+        copy {
+            from configurations.tor.collect { zipTree(it) }
+            into torBinariesDir
+        }
+    }
+    dependsOn cleanTorBinaries
+}
+
+processResources {
+    inputs.dir torBinariesDir
+    dependsOn unpackTorBinaries
 }
