@@ -84,7 +84,8 @@ public class MoatApi {
 					.connectTimeout(60, SECONDS)
 					.build();
 
-			String requestJson = country == null ? "" : "{\"country\": \"" + country + "\"}";
+			String requestJson = (country == null || country.isEmpty())
+					? "" : "{\"country\": \"" + country + "\"}";
 			RequestBody requestBody = RequestBody.create(JSON, requestJson);
 			Request request = new Request.Builder()
 					.url(MOAT_URL + "/" + MOAT_CIRCUMVENTION_SETTINGS)
