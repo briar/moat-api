@@ -4,13 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+import org.briarproject.socks.NoDns;
+import org.briarproject.socks.SocksSocketFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Authenticator;
 import java.net.InetSocketAddress;
-import java.net.PasswordAuthentication;
-import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +18,7 @@ import java.util.Scanner;
 import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
+import javax.net.SocketFactory;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -28,15 +29,9 @@ import okhttp3.ResponseBody;
 
 import static com.fasterxml.jackson.databind.MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES;
 import static java.lang.Integer.parseInt;
-import static java.net.Proxy.Type.SOCKS;
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.logging.Logger.getLogger;
-import static okhttp3.ConnectionSpec.CLEARTEXT;
-import static okhttp3.ConnectionSpec.COMPATIBLE_TLS;
-import static okhttp3.ConnectionSpec.MODERN_TLS;
-import static okhttp3.ConnectionSpec.RESTRICTED_TLS;
 
 @NotNullByDefault
 public class MoatApi {
@@ -47,6 +42,12 @@ public class MoatApi {
 	private static final String MOAT_URL = "https://bridges.torproject.org/moat";
 	private static final String MOAT_CIRCUMVENTION_SETTINGS = "circumvention/settings";
 	private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+	private static final int CONNECT_TO_PROXY_TIMEOUT = (int) SECONDS.toMillis(5);
+	private static final int EXTRA_CONNECT_TIMEOUT = (int) SECONDS.toMillis(120);
+	private static final int EXTRA_SOCKET_TIMEOUT = (int) SECONDS.toMillis(30);
+	private static final String SOCKS_USERNAME =
+			"url=https://moat.torproject.org.global.prod.fastly.net/;front=cdn.sstatic.net";
+	private static final String SOCKS_PASSWORD = "\u0000";
 
 	private final File obfs4Executable;
 	private final File obfs4Dir;
@@ -68,24 +69,18 @@ public class MoatApi {
 		Process obfs4Process = startObfs4();
 		try {
 			int port = getPort(obfs4Process);
-			// TODO try to use OkHttp proxy authenticator instead
-			Authenticator authenticator = new Authenticator() {
-				@Override
-				public PasswordAuthentication getPasswordAuthentication() {
-					return new PasswordAuthentication(
-							"url=https://moat.torproject.org.global.prod.fastly.net/;"
-									+ "front=cdn.sstatic.net",
-							"\u0000".toCharArray());
-				}
-			};
-			Authenticator.setDefault(authenticator);
-
+			SocketFactory socketFactory = new SocksSocketFactory(
+					new InetSocketAddress("localhost", port),
+					CONNECT_TO_PROXY_TIMEOUT,
+					EXTRA_CONNECT_TIMEOUT,
+					EXTRA_SOCKET_TIMEOUT,
+					SOCKS_USERNAME,
+					SOCKS_PASSWORD
+			);
 			OkHttpClient client = new OkHttpClient.Builder()
-					.proxy(new Proxy(SOCKS, new InetSocketAddress("localhost", port)))
-					.connectTimeout(20, SECONDS)
-					.readTimeout(20, SECONDS)
-					.writeTimeout(20, SECONDS)
-					.connectionSpecs(asList(CLEARTEXT, COMPATIBLE_TLS, MODERN_TLS, RESTRICTED_TLS))
+					.socketFactory(socketFactory)
+					.dns(new NoDns())
+					.connectTimeout(60, SECONDS)
 					.build();
 
 			String requestJson = country == null ? "" : "{\"country\": \"" + country + "\"}";
