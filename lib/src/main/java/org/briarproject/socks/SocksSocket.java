@@ -9,14 +9,18 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 import static java.lang.System.arraycopy;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.logging.Logger.getLogger;
 import static org.briarproject.util.ByteUtils.writeUint16;
 import static org.briarproject.util.IoUtils.read;
 
 class SocksSocket extends Socket {
+
+	private static final Logger LOG = getLogger(SocksSocket.class.getName());
 
 	private static final String[] ERRORS = {
 			"Succeeded",
@@ -32,6 +36,10 @@ class SocksSocket extends Socket {
 
 	@SuppressWarnings("MismatchedReadAndWriteOfArray")
 	private static final byte[] UNSPECIFIED_ADDRESS = new byte[4];
+
+	// StandardCharsets is not available on old Android versions
+	@SuppressWarnings("CharsetObjectCanBeUsed")
+	private static final Charset UTF_8 = Charset.forName("UTF-8");
 
 	private final SocketAddress proxy;
 	private final int connectToProxyTimeout;
@@ -63,25 +71,33 @@ class SocksSocket extends Socket {
 		int port = inet.getPort();
 
 		// Connect to the proxy
+		LOG.info("Connecting to proxy");
 		super.connect(proxy, connectToProxyTimeout);
+		LOG.info("Connected to proxy");
 		OutputStream out = IoUtils.getOutputStream(this);
 		InputStream in = IoUtils.getInputStream(this);
 
 		// Request SOCKS 5 with username/password authentication
+		LOG.info("Sending method request");
 		sendMethodRequest(out);
 		receiveMethodResponse(in);
+		LOG.info("Received method response");
 
 		// Send username and password, see https://www.rfc-editor.org/rfc/rfc1929.html
+		LOG.info("Sending auth request");
 		sendAuthRequest(out);
 		receiveAuthResponse(in);
+		LOG.info("Received auth response");
 
 		// Use the supplied timeout temporarily, plus any configured extra
 		int oldTimeout = getSoTimeout();
 		setSoTimeout(timeout + extraConnectTimeout);
 
 		// Connect to the endpoint via the proxy
+		LOG.info("Sending connect request");
 		sendConnectRequest(out, host, port);
 		receiveConnectResponse(in);
+		LOG.info("Received connect response");
 
 		// Restore the old timeout, plus any configured extra
 		setSoTimeout(oldTimeout + extraSocketTimeout);
