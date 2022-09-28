@@ -158,8 +158,8 @@ public class MoatApi {
 	}
 
 	private void getPort(Process process, BlockingQueue<Integer> queue) {
+		boolean found = false;
 		try (Scanner s = new Scanner(process.getInputStream())) {
-			boolean found = false;
 			while (s.hasNextLine()) {
 				String line = s.nextLine();
 				if (!found && line.startsWith(PORT_PREFIX)) {
@@ -172,6 +172,7 @@ public class MoatApi {
 				}
 			}
 		}
+		if (!found) queue.add(-1);
 		// Wait for the process to exit
 		try {
 			process.waitFor();
