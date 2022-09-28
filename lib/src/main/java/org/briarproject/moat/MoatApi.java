@@ -8,7 +8,6 @@ import org.briarproject.socks.NoDns;
 import org.briarproject.socks.SocksSocketFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -17,9 +16,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.logging.Logger;
 
-import javax.annotation.Nullable;
 import javax.net.SocketFactory;
 
 import okhttp3.MediaType;
@@ -33,17 +30,15 @@ import static com.fasterxml.jackson.databind.MapperFeature.BLOCK_UNSAFE_POLYMORP
 import static java.lang.Integer.parseInt;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.logging.Logger.getLogger;
 
 @NotNullByDefault
 public class MoatApi {
 
-	// TODO remove logging
-	private static final Logger LOG = getLogger(MoatApi.class.getName());
-
 	private static final String MOAT_URL = "https://bridges.torproject.org/moat";
 	private static final String MOAT_CIRCUMVENTION_SETTINGS = "circumvention/settings";
 	private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+	private static final String PORT_PREFIX = "CMETHOD meek_lite socks5 127.0.0.1:";
+
 	private static final int CONNECT_TO_PROXY_TIMEOUT = (int) SECONDS.toMillis(5);
 	private static final int EXTRA_CONNECT_TIMEOUT = (int) SECONDS.toMillis(120);
 	private static final int EXTRA_SOCKET_TIMEOUT = (int) SECONDS.toMillis(30);
@@ -64,10 +59,10 @@ public class MoatApi {
 	}
 
 	public List<Bridges> get() throws IOException {
-		return getWithCountry(null);
+		return getWithCountry("");
 	}
 
-	public List<Bridges> getWithCountry(@Nullable String country) throws IOException {
+	public List<Bridges> getWithCountry(String country) throws IOException {
 		Process obfs4Process = startObfs4();
 		try {
 			int port = getPort(obfs4Process);
@@ -86,37 +81,19 @@ public class MoatApi {
 					.connectTimeout(60, SECONDS)
 					.build();
 
-			String requestJson = (country == null || country.isEmpty())
-					? "" : "{\"country\": \"" + country + "\"}";
+			String requestJson = country.isEmpty() ? "" : "{\"country\": \"" + country + "\"}";
 			RequestBody requestBody = RequestBody.create(JSON, requestJson);
 			Request request = new Request.Builder()
 					.url(MOAT_URL + "/" + MOAT_CIRCUMVENTION_SETTINGS)
 					.post(requestBody)
 					.build();
-			LOG.info("Sending request '" + requestJson + "' to " + request.url());
 			Response response = client.newCall(request).execute();
 			ResponseBody responseBody = response.body();
 			if (!response.isSuccessful() || responseBody == null)
 				throw new IOException("request error");
 			String responseJson = responseBody.string();
-			LOG.info("Received response '" + responseJson + "'");
 			return parseResponse(responseJson);
 		} finally {
-			// TODO remove logging
-			File[] files = obfs4Dir.listFiles();
-			if (files != null) {
-				for (File file : files) {
-					if (file.getName().equals("obfs4proxy.log")) {
-						Scanner s = new Scanner(new FileInputStream(file));
-						while (s.hasNextLine()) {
-							LOG.info("LOG: " + s.nextLine());
-						}
-						s.close();
-					}
-					//noinspection ResultOfMethodCallIgnored
-					file.delete();
-				}
-			}
 			obfs4Process.destroy();
 		}
 	}
@@ -152,11 +129,7 @@ public class MoatApi {
 	}
 
 	private Process startObfs4() throws IOException {
-		// TODO remove logging
-		ProcessBuilder pb = new ProcessBuilder(obfs4Executable.getAbsolutePath(),
-				"-enableLogging",
-				"-logLevel=DEBUG"
-		);
+		ProcessBuilder pb = new ProcessBuilder(obfs4Executable.getAbsolutePath());
 		Map<String, String> env = pb.environment();
 		env.put("TOR_PT_MANAGED_TRANSPORT_VER", "1");
 		env.put("TOR_PT_STATE_LOCATION", obfs4Dir.getAbsolutePath());
@@ -189,12 +162,10 @@ public class MoatApi {
 			boolean found = false;
 			while (s.hasNextLine()) {
 				String line = s.nextLine();
-				LOG.info("STDOUT: " + line); // TODO remove logging
-				String prefix = "CMETHOD meek_lite socks5 127.0.0.1:";
-				if (!found && line.startsWith(prefix)) {
+				if (!found && line.startsWith(PORT_PREFIX)) {
 					found = true;
 					try {
-						queue.add(parseInt(line.substring(prefix.length())));
+						queue.add(parseInt(line.substring(PORT_PREFIX.length())));
 					} catch (NumberFormatException e) {
 						queue.add(-1);
 					}
@@ -203,10 +174,8 @@ public class MoatApi {
 		}
 		// Wait for the process to exit
 		try {
-			int exit = process.waitFor();
-			LOG.info("obfs4proxy exited with value " + exit);
+			process.waitFor();
 		} catch (InterruptedException e) {
-			LOG.warning("Interrupted while waiting for obfs4proxy to exit");
 			Thread.currentThread().interrupt();
 		}
 	}
