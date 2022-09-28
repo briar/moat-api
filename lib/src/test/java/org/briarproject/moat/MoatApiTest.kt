@@ -16,12 +16,15 @@ class MoatApiTest {
     @JvmField
     var tempFolder: File? = null
 
+    var obfs4Executable : File = File(tempFolder, "obfs4Executable")
+
     private lateinit var moatApi: MoatApi
 
     @BeforeEach
     fun setup() {
+        extractObfs4Executable()
         moatApi = MoatApi(
-            obfs4ZipInputStream = getInputStream(),
+            obfs4Executable,
             obfs4Dir = tempFolder ?: fail(),
         )
     }
@@ -37,6 +40,15 @@ class MoatApiTest {
     @Test
     fun testUs() {
         assertEquals(emptyList(), moatApi.getWithCountry("us"))
+    }
+
+    private fun extractObfs4Executable() {
+        obfs4Executable.outputStream().use { outputStream ->
+            getInputStream().use { inputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+        if (!obfs4Executable.setExecutable(true, true)) throw IOException()
     }
 
     private fun getInputStream(): InputStream {

@@ -4,14 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.databind.node.ArrayNode
-import okhttp3.ConnectionSpec
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.*
 import java.io.File
 import java.io.IOException
-import java.io.InputStream
 import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
@@ -23,14 +18,12 @@ private const val MOAT_CIRCUMVENTION_SETTINGS = "circumvention/settings"
 private val JSON = MediaType.get("application/json; charset=utf-8")
 
 class MoatApi @JvmOverloads constructor(
-    private val obfs4ZipInputStream: InputStream,
+    private val obfs4Executable: File,
     private val obfs4Dir: File,
-    private val client: OkHttpClient = OkHttpClient(),
     private val mapper: JsonMapper = JsonMapper.builder()
         .enable(BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
         .build(),
 ) {
-    private val obfs4Executable = File(obfs4Dir, "obfs4Executable")
     private var obfs4Process: Process? = null
 
     init {
@@ -111,7 +104,6 @@ class MoatApi @JvmOverloads constructor(
 
     @Throws(IOException::class)
     private fun startObfs4(): Int {
-        installObfs4IfNeeded()
         // TODO remove logging
         val pb = ProcessBuilder(obfs4Executable.absolutePath,
             "-enableLogging",
@@ -140,19 +132,5 @@ class MoatApi @JvmOverloads constructor(
             }
             throw IOException("Did not find meek")
         }
-    }
-
-    @Throws(IOException::class)
-    private fun installObfs4IfNeeded() {
-        if (obfs4Executable.isFile && obfs4Executable.canExecute()) {
-            obfs4ZipInputStream.close()
-            return
-        }
-        obfs4Executable.outputStream().use { outputStream ->
-            obfs4ZipInputStream.use { inputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
-        if (!obfs4Executable.setExecutable(true, true)) throw IOException()
     }
 }
