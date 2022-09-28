@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class MoatApiTest {
 
 	private static final String FASTLY_URL = "https://moat.torproject.org.global.prod.fastly.net/";
-	private static final String FASTLY_FRONT = "front=cdn.sstatic.net";
+	private static final String FASTLY_FRONT = "cdn.sstatic.net";
 	private static final String AZURE_URL = "https://onion.azureedge.net/";
 	private static final String AZURE_FRONT = "ajax.aspnetcdn.com";
 
