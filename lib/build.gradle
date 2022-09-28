@@ -28,8 +28,10 @@ test {
     useJUnitPlatform()
 }
 
-signing {
-    useGpgCmd()
+if (RELEASE_SIGNING_ENABLED != 'false') {
+    signing {
+        useGpgCmd()
+    }
 }
 
 def torBinariesDir = 'src/test/resources'
