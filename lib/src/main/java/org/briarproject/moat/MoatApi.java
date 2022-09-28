@@ -158,7 +158,7 @@ public class MoatApi {
 		Map<String, String> env = pb.environment();
 		env.put("TOR_PT_MANAGED_TRANSPORT_VER", "1");
 		env.put("TOR_PT_STATE_LOCATION", obfs4Dir.getAbsolutePath());
-		env.put("TOR_PT_EXIT_ON_STDIN_CLOSE", "0");
+		env.put("TOR_PT_EXIT_ON_STDIN_CLOSE", "1");
 		env.put("TOR_PT_CLIENT_TRANSPORTS", "meek_lite");
 		pb.redirectErrorStream(true);
 		try {
