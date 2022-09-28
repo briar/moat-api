@@ -1,6 +1,5 @@
 plugins {
     id 'java-library'
-    id 'org.jetbrains.kotlin.jvm'
     id 'com.vanniktech.maven.publish'
 }
 
@@ -14,14 +13,13 @@ configurations {
 }
 
 dependencies {
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib")
-
     // newer versions than okhttp 3.12.x need minSdk 21 on Android
-    api("com.squareup.okhttp3:okhttp:3.12.13")
-    api("com.fasterxml.jackson.core:jackson-databind:2.13.4")
+    api 'com.squareup.okhttp3:okhttp:3.12.13'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    tor 'org.briarproject:obfs4proxy-linux:0.0.14'
 
-    testImplementation('org.jetbrains.kotlin:kotlin-test')
-    tor( "org.briarproject:obfs4proxy-linux:0.0.14")
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
 }
 
 test {
