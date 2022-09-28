@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
@@ -169,21 +171,43 @@ public class MoatApi {
 	}
 
 	private int getPort(Process process) throws IOException {
+		BlockingQueue<Integer> queue = new ArrayBlockingQueue<>(1);
+		Thread t = new Thread(() -> getPort(process, queue));
+		t.setDaemon(false);
+		t.start();
+		try {
+			int port = queue.take();
+			if (port == -1) throw new IOException("Failed to parse port number from stdout");
+			return port;
+		} catch (InterruptedException e) {
+			throw new IOException(e);
+		}
+	}
+
+	private void getPort(Process process, BlockingQueue<Integer> queue) {
 		try (Scanner s = new Scanner(process.getInputStream())) {
+			boolean found = false;
 			while (s.hasNextLine()) {
 				String line = s.nextLine();
 				LOG.info("STDOUT: " + line); // TODO remove logging
-				if (line.startsWith("CMETHOD meek_lite socks5 127.0.0.1:")) {
+				String prefix = "CMETHOD meek_lite socks5 127.0.0.1:";
+				if (!found && line.startsWith(prefix)) {
+					found = true;
 					try {
-						// TODO might need to keep consuming stdout on Windows
-						//  to stop obfs4proxy process hanging
-						return parseInt(line.substring(35));
+						queue.add(parseInt(line.substring(prefix.length())));
 					} catch (NumberFormatException e) {
-						throw new IOException("Invalid port $line");
+						queue.add(-1);
 					}
 				}
 			}
-			throw new IOException("Did not find meek");
+		}
+		// Wait for the process to exit
+		try {
+			int exit = process.waitFor();
+			LOG.info("obfs4proxy exited with value " + exit);
+		} catch (InterruptedException e) {
+			LOG.warning("Interrupted while waiting for obfs4proxy to exit");
+			Thread.currentThread().interrupt();
 		}
 	}
 }
