@@ -41,6 +41,7 @@ import static okhttp3.ConnectionSpec.RESTRICTED_TLS;
 @NotNullByDefault
 public class MoatApi {
 
+	// TODO remove logging
 	private static final Logger LOG = getLogger(MoatApi.class.getName());
 
 	private static final String MOAT_URL = "https://bridges.torproject.org/moat";
@@ -87,17 +88,20 @@ public class MoatApi {
 					.connectionSpecs(asList(CLEARTEXT, COMPATIBLE_TLS, MODERN_TLS, RESTRICTED_TLS))
 					.build();
 
-			String bodyJson = country == null ? "" : "{\"country\": \"" + country + "\"}";
-			RequestBody body = RequestBody.create(JSON, bodyJson);
+			String requestJson = country == null ? "" : "{\"country\": \"" + country + "\"}";
+			RequestBody requestBody = RequestBody.create(JSON, requestJson);
 			Request request = new Request.Builder()
 					.url(MOAT_URL + "/" + MOAT_CIRCUMVENTION_SETTINGS)
-					.post(body)
+					.post(requestBody)
 					.build();
+			LOG.info("Sending request '" + requestJson + "' to " + request.url());
 			Response response = client.newCall(request).execute();
 			ResponseBody responseBody = response.body();
 			if (!response.isSuccessful() || responseBody == null)
 				throw new IOException("request error");
-			JsonNode node = mapper.readTree(responseBody.string());
+			String responseJson = responseBody.string();
+			LOG.info("Received response '" + responseJson + "'");
+			JsonNode node = mapper.readTree(responseJson);
 			JsonNode settings = node.get("settings");
 			if (settings == null) throw new IOException("no settings in response");
 			if (!settings.isArray()) throw new IOException("settings not an array");
@@ -170,6 +174,8 @@ public class MoatApi {
 				LOG.info("STDOUT: " + line); // TODO remove logging
 				if (line.startsWith("CMETHOD meek_lite socks5 127.0.0.1:")) {
 					try {
+						// TODO might need to keep consuming stdout on Windows
+						//  to stop obfs4proxy process hanging
 						return parseInt(line.substring(35));
 					} catch (NumberFormatException e) {
 						throw new IOException("Invalid port $line");
