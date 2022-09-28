@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 
@@ -31,6 +32,7 @@ import static java.net.Proxy.Type.SOCKS;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.logging.Logger.getLogger;
 import static okhttp3.ConnectionSpec.CLEARTEXT;
 import static okhttp3.ConnectionSpec.COMPATIBLE_TLS;
 import static okhttp3.ConnectionSpec.MODERN_TLS;
@@ -38,6 +40,8 @@ import static okhttp3.ConnectionSpec.RESTRICTED_TLS;
 
 @NotNullByDefault
 public class MoatApi {
+
+	private static final Logger LOG = getLogger(MoatApi.class.getName());
 
 	private static final String MOAT_URL = "https://bridges.torproject.org/moat";
 	private static final String MOAT_CIRCUMVENTION_SETTINGS = "circumvention/settings";
@@ -103,18 +107,19 @@ public class MoatApi {
 			}
 			return bridges;
 		} finally {
-			// TODO remove print log
+			// TODO remove logging
 			File[] files = obfs4Dir.listFiles();
 			if (files != null) {
 				for (File file : files) {
 					if (file.getName().equals("obfs4proxy.log")) {
 						Scanner s = new Scanner(new FileInputStream(file));
 						while (s.hasNextLine()) {
-							System.out.println(s.nextLine());
+							LOG.info("LOG: " + s.nextLine());
 						}
 						s.close();
 					}
-
+					//noinspection ResultOfMethodCallIgnored
+					file.delete();
 				}
 			}
 			obfs4Process.destroy();
@@ -159,18 +164,19 @@ public class MoatApi {
 	}
 
 	private int getPort(Process process) throws IOException {
-		Scanner s = new Scanner(process.getInputStream());
-		while (s.hasNextLine()) {
-			String line = s.nextLine();
-			if (line.startsWith("CMETHOD meek_lite socks5 127.0.0.1:")) {
-				System.out.println(line); // TODO remove print
-				try {
-					return parseInt(line.substring(35));
-				} catch (NumberFormatException e) {
-					throw new IOException("Invalid port $line");
+		try (Scanner s = new Scanner(process.getInputStream())) {
+			while (s.hasNextLine()) {
+				String line = s.nextLine();
+				LOG.info("STDOUT: " + line); // TODO remove logging
+				if (line.startsWith("CMETHOD meek_lite socks5 127.0.0.1:")) {
+					try {
+						return parseInt(line.substring(35));
+					} catch (NumberFormatException e) {
+						throw new IOException("Invalid port $line");
+					}
 				}
 			}
+			throw new IOException("Did not find meek");
 		}
-		throw new IOException("Did not find meek");
 	}
 }
