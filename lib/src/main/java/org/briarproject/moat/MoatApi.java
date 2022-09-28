@@ -96,15 +96,7 @@ public class MoatApi {
 				throw new IOException("request error");
 			String responseJson = responseBody.string();
 			LOG.info("Received response '" + responseJson + "'");
-			JsonNode node = mapper.readTree(responseJson);
-			JsonNode settings = node.get("settings");
-			if (settings == null) throw new IOException("no settings in response");
-			if (!settings.isArray()) throw new IOException("settings not an array");
-			List<Bridges> bridges = new ArrayList<>();
-			for (JsonNode n : ((ArrayNode) settings)) {
-				bridges.add(parseBridges(n));
-			}
-			return bridges;
+			return parseResponse(responseJson);
 		} finally {
 			// TODO remove logging
 			File[] files = obfs4Dir.listFiles();
@@ -123,6 +115,18 @@ public class MoatApi {
 			}
 			obfs4Process.destroy();
 		}
+	}
+
+	private List<Bridges> parseResponse(String responseJson) throws IOException {
+		JsonNode node = mapper.readTree(responseJson);
+		JsonNode settings = node.get("settings");
+		if (settings == null) throw new IOException("no settings in response");
+		if (!settings.isArray()) throw new IOException("settings not an array");
+		List<Bridges> bridges = new ArrayList<>();
+		for (JsonNode n : ((ArrayNode) settings)) {
+			bridges.add(parseBridges(n));
+		}
+		return bridges;
 	}
 
 	private Bridges parseBridges(JsonNode node) throws IOException {
