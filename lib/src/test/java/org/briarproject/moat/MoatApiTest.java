@@ -19,33 +19,55 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class MoatApiTest {
 
+	private static final String FASTLY_URL = "https://moat.torproject.org.global.prod.fastly.net/";
+	private static final String FASTLY_FRONT = "front=cdn.sstatic.net";
+	private static final String AZURE_URL = "https://onion.azureedge.net/";
+	private static final String AZURE_FRONT = "ajax.aspnetcdn.com";
+
 	@TempDir
 	private File tempFolder;
 	private File obfs4Executable;
-	private MoatApi moatApi;
 
 	@BeforeEach
 	public void setup() throws IOException {
-		obfs4Executable  = new File(tempFolder, "obfs4Executable");
+		obfs4Executable = new File(tempFolder, "obfs4Executable");
 		extractObfs4Executable();
-		moatApi = new MoatApi(obfs4Executable, tempFolder);
 	}
 
 	@Test
-	public void testCn() throws Exception {
+	public void testCnFastly() throws Exception {
+		testCn(FASTLY_URL, FASTLY_FRONT);
+	}
+
+	@Test
+	public void testCnAzure() throws Exception {
+		testCn(AZURE_URL, AZURE_FRONT);
+	}
+
+	private void testCn(String url, String front) throws Exception {
+		MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
 		List<Bridges> bridges = moatApi.getWithCountry("cn");
 		boolean anyObfs4 = false, anySnowflake = false;
 		for (Bridges b : bridges) {
 			if (b.type.equals("obfs4")) anyObfs4 = true;
 			else if (b.type.equals("snowflake")) anySnowflake = true;
-			if (b.bridgeStrings.isEmpty()) fail();
 		}
 		assertTrue(anyObfs4);
 		assertTrue(anySnowflake);
 	}
 
 	@Test
-	public void testUs() throws Exception {
+	public void testUsFastly() throws Exception {
+		testUs(FASTLY_URL, FASTLY_FRONT);
+	}
+
+	@Test
+	public void testUsAzure() throws Exception {
+		testUs(AZURE_URL, AZURE_FRONT);
+	}
+
+	private void testUs(String url, String front) throws Exception {
+		MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
 		assertEquals(emptyList(), moatApi.getWithCountry("us"));
 	}
 

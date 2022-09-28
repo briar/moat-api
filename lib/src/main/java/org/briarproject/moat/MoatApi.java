@@ -45,20 +45,20 @@ public class MoatApi {
 	private static final int CONNECT_TO_PROXY_TIMEOUT = (int) SECONDS.toMillis(5);
 	private static final int EXTRA_CONNECT_TIMEOUT = (int) SECONDS.toMillis(120);
 	private static final int EXTRA_SOCKET_TIMEOUT = (int) SECONDS.toMillis(30);
-	private static final String SOCKS_USERNAME =
-			"url=https://moat.torproject.org.global.prod.fastly.net/;front=cdn.sstatic.net";
 	private static final String SOCKS_PASSWORD = "\u0000";
 
-	private final File obfs4Executable;
-	private final File obfs4Dir;
+	private final File obfs4Executable, obfs4Dir;
+	private final String url, front;
 	private final JsonMapper mapper = JsonMapper.builder()
 			.enable(BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
 			.build();
 
-	public MoatApi(File obfs4Executable, File obfs4Dir) {
+	public MoatApi(File obfs4Executable, File obfs4Dir, String url, String front) {
 		if (!obfs4Dir.isDirectory()) throw new IllegalArgumentException();
 		this.obfs4Executable = obfs4Executable;
 		this.obfs4Dir = obfs4Dir;
+		this.url = url;
+		this.front = front;
 	}
 
 	public List<Bridges> get() throws IOException {
@@ -69,12 +69,13 @@ public class MoatApi {
 		Process obfs4Process = startObfs4();
 		try {
 			int port = getPort(obfs4Process);
+			String socksUsername = "url=" + url + ";front=" + front;
 			SocketFactory socketFactory = new SocksSocketFactory(
 					new InetSocketAddress("localhost", port),
 					CONNECT_TO_PROXY_TIMEOUT,
 					EXTRA_CONNECT_TIMEOUT,
 					EXTRA_SOCKET_TIMEOUT,
-					SOCKS_USERNAME,
+					socksUsername,
 					SOCKS_PASSWORD
 			);
 			OkHttpClient client = new OkHttpClient.Builder()
