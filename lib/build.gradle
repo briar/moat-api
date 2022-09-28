@@ -13,12 +13,19 @@ configurations {
 }
 
 dependencies {
-    // newer versions than okhttp 3.12.x need minSdk 21 on Android
-    api 'com.squareup.okhttp3:okhttp:3.12.13'
+    // Compile against obsolete version 3.12.x but don't ship it, so that
+    // library users can supply either 4.x or 3.12.x depending on whether they
+    // need Android 4 compatibility
+    compileOnly 'com.squareup.okhttp3:okhttp:3.12.13'
     api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Linux obfs4proxy binary is only used for testing
     tor 'org.briarproject:obfs4proxy-linux:0.0.14'
 
+    // Test with obsolete version 3.12.x to ensure library users can use it
+    // if they need Android 4 compatibility
+    testImplementation 'com.squareup.okhttp3:okhttp:3.12.13'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
 }
 
