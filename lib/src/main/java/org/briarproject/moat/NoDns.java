@@ -1,6 +1,6 @@
-package org.briarproject.socks;
+package org.briarproject.moat;
 
-import org.briarproject.moat.NotNullByDefault;
+import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

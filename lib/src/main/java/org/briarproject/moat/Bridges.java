@@ -1,5 +1,7 @@
 package org.briarproject.moat;
 
+import org.briarproject.nullsafety.NotNullByDefault;
+
 import java.util.List;
 
 @NotNullByDefault

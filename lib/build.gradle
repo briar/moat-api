@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'idea'
     id 'com.vanniktech.maven.publish'
 }
 
@@ -17,8 +18,12 @@ dependencies {
     // library users can supply either 4.x or 3.12.x depending on whether they
     // need Android 4 compatibility
     compileOnly 'com.squareup.okhttp3:okhttp:3.12.13'
+
     api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
+
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'org.briarproject:null-safety:0.1'
+    implementation 'org.briarproject:socks-socket:0.1'
 
     // Linux obfs4proxy binary is only used for testing
     tor 'org.briarproject:obfs4proxy-linux:0.0.14'

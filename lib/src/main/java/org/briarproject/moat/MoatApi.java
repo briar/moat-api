@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import org.briarproject.socks.NoDns;
+import org.briarproject.nullsafety.NotNullByDefault;
 import org.briarproject.socks.SocksSocketFactory;
 
 import java.io.File;
