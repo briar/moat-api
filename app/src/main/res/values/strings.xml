@@ -1,0 +1,10 @@
+<resources>
+	<string name="app_name">Moat Test</string>
+	<string name="country_code">Country code (e.g. US)</string>
+	<string name="send_request">Send request</string>
+	<string name="response_label">Response from server:</string>
+	<string name="bridge_source">Source: %1s</string>
+	<string name="bridge_type">Type: %1s</string>
+	<string name="bridge_line">Bridge: %1s</string>
+	<string name="azure">Use Azure domain front</string>
+</resources>
