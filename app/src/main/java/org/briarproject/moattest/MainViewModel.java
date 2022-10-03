@@ -18,10 +18,12 @@ import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import dagger.hilt.android.lifecycle.HiltViewModel;
 
 import static android.content.Context.MODE_PRIVATE;
 import static java.util.Locale.ROOT;
 
+@HiltViewModel
 class MainViewModel extends AndroidViewModel {
 
 	private static final String OBFS4_LIB_NAME = "libobfs4proxy.so";

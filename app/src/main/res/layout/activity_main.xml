@@ -35,7 +35,7 @@
 		android:layout_height="wrap_content"
 		android:layout_marginTop="8dp"
 		android:text="@string/response_label"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1" />
+		android:textSize="16sp" />
 
 	<ScrollView
 		android:layout_width="match_parent"

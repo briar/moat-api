@@ -9,18 +9,20 @@ import javax.inject.Inject;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.lifecycle.ViewModelProvider;
+import dagger.hilt.android.AndroidEntryPoint;
 
 import static android.os.Build.VERSION.SDK_INT;
 
+@AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
 
-	@Inject
 	MainViewModel viewModel;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		((MoatTestApplication) getApplication()).getAppComponent().inject(this);
+		viewModel = new ViewModelProvider(this).get(MainViewModel.class);
 		setContentView(R.layout.activity_main);
 
 		EditText countryCode = findViewById(R.id.countryCode);
