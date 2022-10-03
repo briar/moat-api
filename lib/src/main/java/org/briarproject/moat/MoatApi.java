@@ -78,7 +78,6 @@ public class MoatApi {
 			OkHttpClient client = new OkHttpClient.Builder()
 					.socketFactory(socketFactory)
 					.dns(new NoDns())
-					.connectTimeout(60, SECONDS)
 					.build();
 
 			String requestJson = country.isEmpty() ? "" : "{\"country\": \"" + country + "\"}";
@@ -104,7 +103,7 @@ public class MoatApi {
 		if (settings == null) throw new IOException("no settings in response");
 		if (!settings.isArray()) throw new IOException("settings not an array");
 		List<Bridges> bridges = new ArrayList<>();
-		for (JsonNode n : ((ArrayNode) settings)) {
+		for (JsonNode n : settings) {
 			bridges.add(parseBridges(n));
 		}
 		return bridges;
@@ -119,7 +118,7 @@ public class MoatApi {
 		List<String> bridges;
 		if (bridgeStrings instanceof ArrayNode) {
 			bridges = new ArrayList<>();
-			for (JsonNode b : ((ArrayNode) bridgeStrings)) {
+			for (JsonNode b : bridgeStrings) {
 				bridges.add(b.asText());
 			}
 		} else {
