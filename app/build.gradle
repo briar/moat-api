@@ -1,0 +1,118 @@
+import com.android.build.gradle.tasks.MergeResources
+
+plugins {
+    id 'com.android.application'
+    id 'com.google.dagger.hilt.android'
+}
+
+android {
+    namespace 'org.briarproject.moattest'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId "org.briarproject.moattest"
+        minSdk 16
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    flavorDimensions "okHttp"
+    productFlavors {
+        ok3 {
+            dimension "okHttp"
+            applicationIdSuffix ".ok3"
+            versionNameSuffix "-ok3"
+            dependencies {
+                // Use obsolete version 3.12.x for Android 4 compatibility
+                implementation 'com.squareup.okhttp3:okhttp:3.12.13'
+            }
+        }
+        ok4 {
+            dimension "okHttp"
+            applicationIdSuffix ".ok4"
+            versionNameSuffix "-ok4"
+            defaultConfig {
+                minSdk 21
+            }
+            dependencies {
+                implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+configurations {
+    tor
+}
+
+dependencies {
+    implementation project(':lib')
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'com.google.dagger:hilt-android:2.44'
+    implementation 'org.conscrypt:conscrypt-android:2.5.2'
+
+    tor 'org.briarproject:obfs4proxy-android:0.0.14'
+
+    annotationProcessor 'com.google.dagger:hilt-compiler:2.44'
+}
+
+def torLibsDir = 'src/main/jniLibs'
+
+task cleanTorBinaries {
+    doLast {
+        delete fileTree(torLibsDir) { include '**/*.so' }
+    }
+}
+
+clean.dependsOn cleanTorBinaries
+
+task unpackTorBinaries {
+    doLast {
+        configurations.tor.each { outer ->
+            zipTree(outer).each { inner ->
+                if (inner.name.endsWith('_arm_pie.zip')) {
+                    copy {
+                        from zipTree(inner)
+                        into torLibsDir
+                        rename '(.*)', 'armeabi-v7a/lib$1.so'
+                    }
+                } else if (inner.name.endsWith('_arm64_pie.zip')) {
+                    copy {
+                        from zipTree(inner)
+                        into torLibsDir
+                        rename '(.*)', 'arm64-v8a/lib$1.so'
+                    }
+                } else if (inner.name.endsWith('_x86_pie.zip')) {
+                    copy {
+                        from zipTree(inner)
+                        into torLibsDir
+                        rename '(.*)', 'x86/lib$1.so'
+                    }
+                } else if (inner.name.endsWith('_x86_64_pie.zip')) {
+                    copy {
+                        from zipTree(inner)
+                        into torLibsDir
+                        rename '(.*)', 'x86_64/lib$1.so'
+                    }
+                }
+            }
+        }
+    }
+    dependsOn cleanTorBinaries
+}
+
+tasks.withType(MergeResources) {
+    inputs.dir torLibsDir
+    dependsOn unpackTorBinaries
+}

@@ -1,6 +1,6 @@
 plugins {
     id 'java-library'
-    id 'org.jetbrains.kotlin.jvm'
+    id 'idea'
     id 'com.vanniktech.maven.publish'
 }
 
@@ -9,20 +9,62 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+configurations {
+    tor
+}
+
 dependencies {
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib")
+    // Compile against obsolete version 3.12.x but don't ship it, so that
+    // library users can supply either 4.x or 3.12.x depending on whether they
+    // need Android 4 compatibility
+    compileOnly 'com.squareup.okhttp3:okhttp:3.12.13'
 
-    // newer versions than okhttp 3.12.x need minSdk 21 on Android
-    api("com.squareup.okhttp3:okhttp:3.12.13")
-    api("com.fasterxml.jackson.core:jackson-databind:2.13.4")
+    api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
 
-    testImplementation('org.jetbrains.kotlin:kotlin-test')
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'org.briarproject:null-safety:0.1'
+    implementation 'org.briarproject:socks-socket:0.1'
+
+    // Linux obfs4proxy binary is only used for testing
+    tor 'org.briarproject:obfs4proxy-linux:0.0.14'
+
+    // Test with obsolete version 3.12.x to ensure library users can use it
+    // if they need Android 4 compatibility
+    testImplementation 'com.squareup.okhttp3:okhttp:3.12.13'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
 }
 
 test {
     useJUnitPlatform()
 }
 
-signing {
-    useGpgCmd()
+if (RELEASE_SIGNING_ENABLED != 'false') {
+    signing {
+        useGpgCmd()
+    }
+}
+
+def torBinariesDir = 'src/test/resources'
+
+task cleanTorBinaries {
+    doLast {
+        delete fileTree(torBinariesDir) { include '*.zip' }
+    }
+}
+
+clean.dependsOn cleanTorBinaries
+
+task unpackTorBinaries {
+    doLast {
+        copy {
+            from configurations.tor.collect { zipTree(it) }
+            into torBinariesDir
+        }
+    }
+    dependsOn cleanTorBinaries
+}
+
+processResources {
+    inputs.dir torBinariesDir
+    dependsOn unpackTorBinaries
 }
