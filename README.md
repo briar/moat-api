@@ -6,7 +6,7 @@ A tiny wrapper around Tor Project's [Moat Circumvention Settings API](https://gi
 
 Add this to your build.gradle file:
 
-    implementation 'org.briarproject:moat-api:0.1'
+    implementation 'org.briarproject:moat-api:0.2'
 
 You also need to add [OkHttp](https://square.github.io/okhttp/) as a dependency. The current stable version of OkHttp (4.10) is compatible with Android 5 (API 21) or later:
 
