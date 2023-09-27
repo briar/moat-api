@@ -30,7 +30,7 @@ class MainViewModel extends AndroidViewModel {
 	private static final String STATE_DIR_NAME = "state";
 
 	private static final String FASTLY_URL = "https://moat.torproject.org.global.prod.fastly.net/";
-	private static final String FASTLY_FRONT = "cdn.sstatic.net";
+	private static final String FASTLY_FRONT = "foursquare.com";
 	private static final String AZURE_URL = "https://onion.azureedge.net/";
 	private static final String AZURE_FRONT = "ajax.aspnetcdn.com";
 
