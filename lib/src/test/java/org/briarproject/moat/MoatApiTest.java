@@ -20,9 +20,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class MoatApiTest {
 
 	private static final String FASTLY_URL = "https://moat.torproject.org.global.prod.fastly.net/";
-	private static final String FASTLY_FRONT = "foursquare.com";
+	private static final String[] FASTLY_FRONTS = new String[]{"cdn.yelp.com", "www.shazam.com",
+			"www.cosmopolitan.com", "www.esquire.com"};
 	private static final String AZURE_URL = "https://onion.azureedge.net/";
-	private static final String AZURE_FRONT = "ajax.aspnetcdn.com";
+	private static final String[] AZURE_FRONTS = new String[]{"ajax.aspnetcdn.com"};
 
 	@TempDir
 	private File tempFolder;
@@ -36,39 +37,43 @@ public class MoatApiTest {
 
 	@Test
 	public void testCnFastly() throws Exception {
-		testCn(FASTLY_URL, FASTLY_FRONT);
+		testCn(FASTLY_URL, FASTLY_FRONTS);
 	}
 
 	@Test
 	public void testCnAzure() throws Exception {
-		testCn(AZURE_URL, AZURE_FRONT);
+		testCn(AZURE_URL, AZURE_FRONTS);
 	}
 
-	private void testCn(String url, String front) throws Exception {
-		MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
-		List<Bridges> bridges = moatApi.getWithCountry("cn");
-		boolean anyObfs4 = false, anySnowflake = false;
-		for (Bridges b : bridges) {
-			if (b.type.equals("obfs4")) anyObfs4 = true;
-			else if (b.type.equals("snowflake")) anySnowflake = true;
+	private void testCn(String url, String[] fronts) throws Exception {
+		for (String front : fronts) {
+			MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
+			List<Bridges> bridges = moatApi.getWithCountry("cn");
+			boolean anyObfs4 = false, anySnowflake = false;
+			for (Bridges b : bridges) {
+				if (b.type.equals("obfs4")) anyObfs4 = true;
+				else if (b.type.equals("snowflake")) anySnowflake = true;
+			}
+			assertTrue(anyObfs4);
+			assertTrue(anySnowflake);
 		}
-		assertTrue(anyObfs4);
-		assertTrue(anySnowflake);
 	}
 
 	@Test
 	public void testUsFastly() throws Exception {
-		testUs(FASTLY_URL, FASTLY_FRONT);
+		testUs(FASTLY_URL, FASTLY_FRONTS);
 	}
 
 	@Test
 	public void testUsAzure() throws Exception {
-		testUs(AZURE_URL, AZURE_FRONT);
+		testUs(AZURE_URL, AZURE_FRONTS);
 	}
 
-	private void testUs(String url, String front) throws Exception {
-		MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
-		assertEquals(emptyList(), moatApi.getWithCountry("us"));
+	private void testUs(String url, String[] fronts) throws Exception {
+		for (String front : fronts) {
+			MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
+			assertEquals(emptyList(), moatApi.getWithCountry("us"));
+		}
 	}
 
 	private void extractObfs4Executable() throws IOException {
