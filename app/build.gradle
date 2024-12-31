@@ -62,7 +62,7 @@ dependencies {
     implementation 'com.google.dagger:hilt-android:2.44'
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
 
-    tor 'org.briarproject:obfs4proxy-android:0.0.14'
+    tor 'org.briarproject:lyrebird-android:0.5.0-2'
 
     annotationProcessor 'com.google.dagger:hilt-compiler:2.44'
 }

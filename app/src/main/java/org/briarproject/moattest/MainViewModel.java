@@ -26,7 +26,7 @@ import static java.util.Locale.ROOT;
 @HiltViewModel
 class MainViewModel extends AndroidViewModel {
 
-	private static final String OBFS4_LIB_NAME = "libobfs4proxy.so";
+	private static final String LYREBIRD_LIB_NAME = "liblyrebird.so";
 	private static final String STATE_DIR_NAME = "state";
 
 	private static final String FASTLY_URL = "https://moat.torproject.org.global.prod.fastly.net/";
@@ -58,11 +58,11 @@ class MainViewModel extends AndroidViewModel {
 		countryCode = countryCode.toLowerCase(ROOT);
 		Application app = getApplication();
 		String nativeLibDir = app.getApplicationInfo().nativeLibraryDir;
-		File obfs4Lib = new File(nativeLibDir, OBFS4_LIB_NAME);
+		File lyrebirdLib = new File(nativeLibDir, LYREBIRD_LIB_NAME);
 		File stateDir = app.getDir(STATE_DIR_NAME, MODE_PRIVATE);
 		String url = azure ? AZURE_URL : FASTLY_URL;
 		String front = azure ? AZURE_FRONT : FASTLY_FRONT;
-		MoatApi moat = new MoatApi(obfs4Lib, stateDir, url, front);
+		MoatApi moat = new MoatApi(lyrebirdLib, stateDir, url, front);
 		try {
 			List<Bridges> bridges = moat.getWithCountry(countryCode);
 			StringBuilder sb = new StringBuilder();

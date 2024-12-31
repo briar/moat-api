@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.zip.ZipInputStream;
 
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,15 +23,17 @@ public class MoatApiTest {
 			"www.cosmopolitan.com", "www.esquire.com"};
 	private static final String AZURE_URL = "https://onion.azureedge.net/";
 	private static final String[] AZURE_FRONTS = new String[]{"ajax.aspnetcdn.com"};
+	private static final String CDN77_URL = "https://1314488750.rsc.cdn77.org/";
+	private static final String[] CDN77_FRONTS = new String[]{"www.phpmyadmin.net"};
 
 	@TempDir
 	private File tempFolder;
-	private File obfs4Executable;
+	private File lyrebirdExecutable;
 
 	@BeforeEach
 	public void setup() throws IOException {
-		obfs4Executable = new File(tempFolder, "obfs4Executable");
-		extractObfs4Executable();
+		lyrebirdExecutable = new File(tempFolder, "lyrebirdExecutable");
+		extractLyrebirdExecutable();
 	}
 
 	@Test
@@ -45,9 +46,14 @@ public class MoatApiTest {
 		testCn(AZURE_URL, AZURE_FRONTS);
 	}
 
+	@Test
+	public void testCnCdn77() throws Exception {
+		testCn(CDN77_URL, CDN77_FRONTS);
+	}
+
 	private void testCn(String url, String[] fronts) throws Exception {
 		for (String front : fronts) {
-			MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
+			MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front);
 			List<Bridges> bridges = moatApi.getWithCountry("cn");
 			boolean anyObfs4 = false, anySnowflake = false;
 			for (Bridges b : bridges) {
@@ -69,16 +75,21 @@ public class MoatApiTest {
 		testUs(AZURE_URL, AZURE_FRONTS);
 	}
 
+	@Test
+	public void testUsCdn77() throws Exception {
+		testUs(CDN77_URL, CDN77_FRONTS);
+	}
+
 	private void testUs(String url, String[] fronts) throws Exception {
 		for (String front : fronts) {
-			MoatApi moatApi = new MoatApi(obfs4Executable, tempFolder, url, front);
+			MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front);
 			assertEquals(emptyList(), moatApi.getWithCountry("us"));
 		}
 	}
 
-	private void extractObfs4Executable() throws IOException {
-		OutputStream out = new FileOutputStream(obfs4Executable);
-		InputStream in = getInputStream();
+	private void extractLyrebirdExecutable() throws IOException {
+		OutputStream out = new FileOutputStream(lyrebirdExecutable);
+		InputStream in = getResourceInputStream("x86_64/lyrebird");
 		byte[] buf = new byte[4096];
 		while (true) {
 			int read = in.read(buf);
@@ -88,14 +99,7 @@ public class MoatApiTest {
 		in.close();
 		out.flush();
 		out.close();
-		if (!obfs4Executable.setExecutable(true, true)) throw new IOException();
-	}
-
-	private InputStream getInputStream() throws IOException {
-		InputStream in = getResourceInputStream("obfs4proxy_linux-x86_64.zip");
-		ZipInputStream zin = new ZipInputStream(in);
-		if (zin.getNextEntry() == null) throw new IOException();
-		return zin;
+		if (!lyrebirdExecutable.setExecutable(true, true)) throw new IOException();
 	}
 
 	@SuppressWarnings("SameParameterValue")

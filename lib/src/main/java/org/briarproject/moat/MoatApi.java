@@ -44,16 +44,16 @@ public class MoatApi {
 	private static final int EXTRA_SOCKET_TIMEOUT = (int) SECONDS.toMillis(30);
 	private static final String SOCKS_PASSWORD = "\u0000";
 
-	private final File obfs4Executable, obfs4Dir;
+	private final File lyrebirdExecutable, lyrebirdDir;
 	private final String url, front;
 	private final JsonMapper mapper = JsonMapper.builder()
 			.enable(BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
 			.build();
 
-	public MoatApi(File obfs4Executable, File obfs4Dir, String url, String front) {
-		if (!obfs4Dir.isDirectory()) throw new IllegalArgumentException();
-		this.obfs4Executable = obfs4Executable;
-		this.obfs4Dir = obfs4Dir;
+	public MoatApi(File lyrebirdExecutable, File lyrebirdDir, String url, String front) {
+		if (!lyrebirdDir.isDirectory()) throw new IllegalArgumentException();
+		this.lyrebirdExecutable = lyrebirdExecutable;
+		this.lyrebirdDir = lyrebirdDir;
 		this.url = url;
 		this.front = front;
 	}
@@ -63,9 +63,9 @@ public class MoatApi {
 	}
 
 	public List<Bridges> getWithCountry(String country) throws IOException {
-		Process obfs4Process = startObfs4();
+		Process lyrebirdProcess = startLyrebird();
 		try {
-			int port = getPort(obfs4Process);
+			int port = getPort(lyrebirdProcess);
 			String socksUsername = "url=" + url + ";front=" + front;
 			SocketFactory socketFactory = new SocksSocketFactory(
 					new InetSocketAddress("localhost", port),
@@ -93,7 +93,7 @@ public class MoatApi {
 			String responseJson = responseBody.string();
 			return parseResponse(responseJson);
 		} finally {
-			obfs4Process.destroy();
+			lyrebirdProcess.destroy();
 		}
 	}
 
@@ -127,11 +127,11 @@ public class MoatApi {
 		return new Bridges(type, source, bridges);
 	}
 
-	private Process startObfs4() throws IOException {
-		ProcessBuilder pb = new ProcessBuilder(obfs4Executable.getAbsolutePath());
+	private Process startLyrebird() throws IOException {
+		ProcessBuilder pb = new ProcessBuilder(lyrebirdExecutable.getAbsolutePath());
 		Map<String, String> env = pb.environment();
 		env.put("TOR_PT_MANAGED_TRANSPORT_VER", "1");
-		env.put("TOR_PT_STATE_LOCATION", obfs4Dir.getAbsolutePath());
+		env.put("TOR_PT_STATE_LOCATION", lyrebirdDir.getAbsolutePath());
 		env.put("TOR_PT_EXIT_ON_STDIN_CLOSE", "1");
 		env.put("TOR_PT_CLIENT_TRANSPORTS", "meek_lite");
 		pb.redirectErrorStream(true);
