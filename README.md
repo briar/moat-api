@@ -20,4 +20,4 @@ On Android versions earlier than 7.1 (API 25), you may need to use [Conscrypt](h
 
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
 
-Finally, you must also provide a suitable [obfs4proxy](https://gitweb.torproject.org/pluggable-transports/obfs4.git/tree/README.md) binary for your platform.
+Finally, you must also provide a suitable meek implementation, such as [lyrebird](https://gitweb.torproject.org/pluggable-transports/lyrebird.git/tree/README.md), for your platform.

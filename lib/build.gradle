@@ -25,8 +25,8 @@ dependencies {
     implementation 'org.briarproject:null-safety:0.1'
     implementation 'org.briarproject:socks-socket:0.1'
 
-    // Linux obfs4proxy binary is only used for testing
-    tor 'org.briarproject:obfs4proxy-linux:0.0.14'
+    // Linux lyrebird binary is only used for testing
+    tor 'org.briarproject:lyrebird-linux:0.5.0-2'
 
     // Test with obsolete version 3.12.x to ensure library users can use it
     // if they need Android 4 compatibility
