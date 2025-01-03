@@ -23,7 +23,7 @@ public class MoatApiTest {
 			"www.cosmopolitan.com", "www.esquire.com"};
 	private static final String AZURE_URL = "https://onion.azureedge.net/";
 	private static final String[] AZURE_FRONTS = new String[]{"ajax.aspnetcdn.com"};
-	private static final String CDN77_URL = "https://1314488750.rsc.cdn77.org/";
+	private static final String CDN77_URL = "https://1723079976.rsc.cdn77.org/";
 	private static final String[] CDN77_FRONTS = new String[]{"www.phpmyadmin.net"};
 
 	@TempDir
