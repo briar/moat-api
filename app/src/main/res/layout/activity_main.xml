@@ -16,13 +16,6 @@
 		android:importantForAutofill="no"
 		android:inputType="textNoSuggestions" />
 
-	<androidx.appcompat.widget.SwitchCompat
-		android:id="@+id/azure"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginTop="8dp"
-		android:text="@string/azure" />
-
 	<Button
 		android:id="@+id/request"
 		android:layout_width="match_parent"

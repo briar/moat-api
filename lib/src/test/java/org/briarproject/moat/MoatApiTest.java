@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
@@ -18,11 +18,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class MoatApiTest {
 
-	private static final String FASTLY_URL = "https://moat.torproject.org.global.prod.fastly.net/";
-	private static final String[] FASTLY_FRONTS = new String[]{"cdn.yelp.com", "www.shazam.com",
-			"www.cosmopolitan.com", "www.esquire.com"};
-	private static final String AZURE_URL = "https://onion.azureedge.net/";
-	private static final String[] AZURE_FRONTS = new String[]{"ajax.aspnetcdn.com"};
 	private static final String CDN77_URL = "https://1723079976.rsc.cdn77.org/";
 	private static final String[] CDN77_FRONTS = new String[]{"www.phpmyadmin.net"};
 
@@ -37,20 +32,11 @@ public class MoatApiTest {
 	}
 
 	@Test
-	public void testCnFastly() throws Exception {
-		testCn(FASTLY_URL, FASTLY_FRONTS);
-	}
-
-	@Test
-	public void testCnAzure() throws Exception {
-		testCn(AZURE_URL, AZURE_FRONTS);
-	}
-
-	@Test
 	public void testCnCdn77() throws Exception {
 		testCn(CDN77_URL, CDN77_FRONTS);
 	}
 
+	@SuppressWarnings("SameParameterValue")
 	private void testCn(String url, String[] fronts) throws Exception {
 		for (String front : fronts) {
 			MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front);
@@ -66,20 +52,11 @@ public class MoatApiTest {
 	}
 
 	@Test
-	public void testUsFastly() throws Exception {
-		testUs(FASTLY_URL, FASTLY_FRONTS);
-	}
-
-	@Test
-	public void testUsAzure() throws Exception {
-		testUs(AZURE_URL, AZURE_FRONTS);
-	}
-
-	@Test
 	public void testUsCdn77() throws Exception {
 		testUs(CDN77_URL, CDN77_FRONTS);
 	}
 
+	@SuppressWarnings("SameParameterValue")
 	private void testUs(String url, String[] fronts) throws Exception {
 		for (String front : fronts) {
 			MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front);
@@ -88,7 +65,7 @@ public class MoatApiTest {
 	}
 
 	private void extractLyrebirdExecutable() throws IOException {
-		OutputStream out = new FileOutputStream(lyrebirdExecutable);
+		OutputStream out = Files.newOutputStream(lyrebirdExecutable.toPath());
 		InputStream in = getResourceInputStream("x86_64/lyrebird");
 		byte[] buf = new byte[4096];
 		while (true) {

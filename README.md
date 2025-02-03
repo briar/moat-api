@@ -16,7 +16,7 @@ If you need to support Android 4, you can use an obsolete version of OkHttp (3.1
 
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
 
-On Android versions earlier than 7.1 (API 25), you may need to use [Conscrypt](https://github.com/google/conscrypt/) for TLS connections to Fastly:
+On old versions of Android, you may need to use [Conscrypt](https://github.com/google/conscrypt/) to get a modern TLS stack:
 
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
 

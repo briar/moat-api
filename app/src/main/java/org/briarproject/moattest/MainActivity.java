@@ -26,13 +26,8 @@ public class MainActivity extends AppCompatActivity {
 		setContentView(R.layout.activity_main);
 
 		EditText countryCode = findViewById(R.id.countryCode);
-		SwitchCompat azure = findViewById(R.id.azure);
 		Button request = findViewById(R.id.request);
 		TextView response = findViewById(R.id.response);
-
-		// Before Android 7.1 we should use the Azure domain front, as the Fastly front
-		// uses an expired root certificate that older Android devices can't verify
-		azure.setChecked(SDK_INT < 25);
 
 		viewModel.getResponse().observe(this, text -> {
 			request.setEnabled(true);
@@ -42,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 		request.setOnClickListener(v -> {
 			request.setEnabled(false);
 			response.setText(null);
-			viewModel.sendRequest(countryCode.getText().toString(), azure.isChecked());
+			viewModel.sendRequest(countryCode.getText().toString());
 		});
 	}
 }
