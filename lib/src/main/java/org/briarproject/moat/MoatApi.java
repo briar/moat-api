@@ -290,15 +290,25 @@ public class MoatApi {
 			LOG.info("Checking subject: " + curr.getSubjectX500Principal().getName());
 			// Check that the certificate is within its validity period
 			curr.checkValidity();
-			// Check that the issuer matches the subject of the previous certificate
+			// Check that the issuer matches the subject ID and name of the previous certificate
 			if (!Arrays.equals(curr.getIssuerUniqueID(), prev.getSubjectUniqueID())) {
-				throw new CertificateException("Certificate issuer does not match");
+				throw new CertificateException("Certificate issuer unique ID does not match");
+			}
+			if (!curr.getIssuerX500Principal().getName().equals(
+					prev.getSubjectX500Principal().getName())) {
+				throw new CertificateException("Certificate issuer name does not match");
 			}
 			// Check that the certificate can be used for digital signatures
 			boolean[] keyUsage = curr.getKeyUsage();
 			if (keyUsage.length == 0 || !keyUsage[0]) {
 				throw new CertificateException(
 						"Certificate is not authorised for digital signatures");
+			}
+			// If this is not the leaf certificate, check that is can be used for signing
+			// certificates
+			if (i > 0 && (keyUsage.length < 6 || !keyUsage[5])) {
+				throw new CertificateException(
+						"Certificate is not authorised for signing certificates");
 			}
 			// Check the basic constraints. The number of CA certificates in the chain
 			// following the current certificate is (i - 1).
@@ -312,7 +322,7 @@ public class MoatApi {
 			} else if (i == 0) {
 				throw new CertificateException("CA certificate found at invalid position");
 			} else {
-				LOG.info("CA certificate with maximum path length: " + constraints);
+				LOG.info("CA certificate with maximum CA path length: " + constraints);
 				if (constraints < caPathLength) {
 					throw new CertificateException("CA certificate has maximum CA path length: "
 							+ constraints + ", needed: " + caPathLength);
