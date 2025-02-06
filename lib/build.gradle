@@ -26,7 +26,7 @@ dependencies {
     implementation 'org.briarproject:socks-socket:0.1'
 
     // Linux lyrebird binary is only used for testing
-    tor 'org.briarproject:lyrebird-linux:0.5.0-2'
+    tor 'org.briarproject:lyrebird-linux:0.5.0-3'
 
     // Test with obsolete version 3.12.x to ensure library users can use it
     // if they need Android 4 compatibility
