@@ -72,16 +72,23 @@ public class MoatApi {
 
 	private final File lyrebirdExecutable, lyrebirdDir;
 	private final String url, front;
+	private final boolean addIsrgRootCertificate;
 	private final JsonMapper mapper = JsonMapper.builder()
 			.enable(BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
 			.build();
 
 	public MoatApi(File lyrebirdExecutable, File lyrebirdDir, String url, String front) {
+		this(lyrebirdExecutable, lyrebirdDir, url, front, false);
+	}
+
+	public MoatApi(File lyrebirdExecutable, File lyrebirdDir, String url, String front,
+			boolean addIsrgRootCertificate) {
 		if (!lyrebirdDir.isDirectory()) throw new IllegalArgumentException();
 		this.lyrebirdExecutable = lyrebirdExecutable;
 		this.lyrebirdDir = lyrebirdDir;
 		this.url = url;
 		this.front = front;
+		this.addIsrgRootCertificate = addIsrgRootCertificate;
 	}
 
 	public List<Bridges> get() throws IOException {
@@ -101,13 +108,14 @@ public class MoatApi {
 					socksUsername,
 					SOCKS_PASSWORD
 			);
-			X509TrustManager trustManager = createTrustManager();
-			SSLSocketFactory sslSocketFactory = createSslSocketFactory(trustManager);
-			OkHttpClient client = new OkHttpClient.Builder()
+			OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
 					.socketFactory(socketFactory)
-					.sslSocketFactory(sslSocketFactory, trustManager)
-					.dns(new NoDns())
-					.build();
+					.dns(new NoDns());
+			if (addIsrgRootCertificate) {
+				X509TrustManager trustManager = createTrustManager();
+				clientBuilder.sslSocketFactory(createSslSocketFactory(trustManager), trustManager);
+			}
+			OkHttpClient client = clientBuilder.build();
 
 			String requestJson = country.isEmpty() ? "" : "{\"country\": \"" + country + "\"}";
 			RequestBody requestBody = RequestBody.create(JSON, requestJson);

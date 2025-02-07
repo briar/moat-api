@@ -39,15 +39,17 @@ public class MoatApiTest {
 	@SuppressWarnings("SameParameterValue")
 	private void testCn(String url, String[] fronts) throws Exception {
 		for (String front : fronts) {
-			MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front);
-			List<Bridges> bridges = moatApi.getWithCountry("cn");
-			boolean anyObfs4 = false, anySnowflake = false;
-			for (Bridges b : bridges) {
-				if (b.type.equals("obfs4")) anyObfs4 = true;
-				else if (b.type.equals("snowflake")) anySnowflake = true;
+			for (boolean isrg : new boolean[]{true, false}) {
+				MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front, isrg);
+				List<Bridges> bridges = moatApi.getWithCountry("cn");
+				boolean anyObfs4 = false, anySnowflake = false;
+				for (Bridges b : bridges) {
+					if (b.type.equals("obfs4")) anyObfs4 = true;
+					else if (b.type.equals("snowflake")) anySnowflake = true;
+				}
+				assertTrue(anyObfs4);
+				assertTrue(anySnowflake);
 			}
-			assertTrue(anyObfs4);
-			assertTrue(anySnowflake);
 		}
 	}
 
@@ -59,8 +61,10 @@ public class MoatApiTest {
 	@SuppressWarnings("SameParameterValue")
 	private void testUs(String url, String[] fronts) throws Exception {
 		for (String front : fronts) {
-			MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front);
-			assertEquals(emptyList(), moatApi.getWithCountry("us"));
+			for (boolean isrg : new boolean[]{true, false}) {
+				MoatApi moatApi = new MoatApi(lyrebirdExecutable, tempFolder, url, front, isrg);
+				assertEquals(emptyList(), moatApi.getWithCountry("us"));
+			}
 		}
 	}
 

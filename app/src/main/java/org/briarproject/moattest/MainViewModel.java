@@ -21,6 +21,7 @@ import androidx.lifecycle.MutableLiveData;
 import dagger.hilt.android.lifecycle.HiltViewModel;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.os.Build.VERSION.SDK_INT;
 import static java.util.Locale.ROOT;
 
 @HiltViewModel
@@ -58,7 +59,8 @@ class MainViewModel extends AndroidViewModel {
 		String nativeLibDir = app.getApplicationInfo().nativeLibraryDir;
 		File lyrebirdLib = new File(nativeLibDir, LYREBIRD_LIB_NAME);
 		File stateDir = app.getDir(STATE_DIR_NAME, MODE_PRIVATE);
-		MoatApi moat = new MoatApi(lyrebirdLib, stateDir, CDN77_URL, CDN77_FRONT);
+		// On API level < 25, add the ISRG root certificate which devices don't have by default
+		MoatApi moat = new MoatApi(lyrebirdLib, stateDir, CDN77_URL, CDN77_FRONT, SDK_INT < 25);
 		try {
 			List<Bridges> bridges = moat.getWithCountry(countryCode);
 			StringBuilder sb = new StringBuilder();
