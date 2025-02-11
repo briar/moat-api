@@ -21,6 +21,7 @@ import androidx.lifecycle.MutableLiveData;
 import dagger.hilt.android.lifecycle.HiltViewModel;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.os.Build.VERSION.SDK_INT;
 import static java.util.Locale.ROOT;
 
 @HiltViewModel
@@ -29,10 +30,8 @@ class MainViewModel extends AndroidViewModel {
 	private static final String LYREBIRD_LIB_NAME = "liblyrebird.so";
 	private static final String STATE_DIR_NAME = "state";
 
-	private static final String FASTLY_URL = "https://moat.torproject.org.global.prod.fastly.net/";
-	private static final String FASTLY_FRONT = "cdn.yelp.com";
-	private static final String AZURE_URL = "https://onion.azureedge.net/";
-	private static final String AZURE_FRONT = "ajax.aspnetcdn.com";
+	private static final String CDN77_URL = "https://1723079976.rsc.cdn77.org/";
+	private static final String CDN77_FRONT = "www.phpmyadmin.net";
 
 	private final ExecutorService backgroundExecutor;
 	private final MutableLiveData<String> response = new MutableLiveData<>();
@@ -49,20 +48,19 @@ class MainViewModel extends AndroidViewModel {
 	}
 
 	@UiThread
-	void sendRequest(String countryCode, boolean azure) {
-		backgroundExecutor.execute(() -> sendRequestInBackground(countryCode, azure));
+	void sendRequest(String countryCode) {
+		backgroundExecutor.execute(() -> sendRequestInBackground(countryCode));
 	}
 
 	@WorkerThread
-	private void sendRequestInBackground(String countryCode, boolean azure) {
+	private void sendRequestInBackground(String countryCode) {
 		countryCode = countryCode.toLowerCase(ROOT);
 		Application app = getApplication();
 		String nativeLibDir = app.getApplicationInfo().nativeLibraryDir;
 		File lyrebirdLib = new File(nativeLibDir, LYREBIRD_LIB_NAME);
 		File stateDir = app.getDir(STATE_DIR_NAME, MODE_PRIVATE);
-		String url = azure ? AZURE_URL : FASTLY_URL;
-		String front = azure ? AZURE_FRONT : FASTLY_FRONT;
-		MoatApi moat = new MoatApi(lyrebirdLib, stateDir, url, front);
+		// On API level < 25, add the ISRG root certificate which devices don't have by default
+		MoatApi moat = new MoatApi(lyrebirdLib, stateDir, CDN77_URL, CDN77_FRONT, SDK_INT < 25);
 		try {
 			List<Bridges> bridges = moat.getWithCountry(countryCode);
 			StringBuilder sb = new StringBuilder();

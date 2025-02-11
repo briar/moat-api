@@ -9,15 +9,34 @@ import org.briarproject.socks.SocksSocketFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.security.InvalidKeyException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.SignatureException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.logging.Logger;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -28,16 +47,23 @@ import okhttp3.ResponseBody;
 
 import static com.fasterxml.jackson.databind.MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES;
 import static java.lang.Integer.parseInt;
+import static java.lang.System.arraycopy;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.logging.Logger.getLogger;
+import static javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm;
+import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
 public class MoatApi {
+
+	private static final Logger LOG = getLogger(MoatApi.class.getName());
 
 	private static final String MOAT_URL = "https://bridges.torproject.org/moat";
 	private static final String MOAT_CIRCUMVENTION_SETTINGS = "circumvention/settings";
 	private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 	private static final String PORT_PREFIX = "CMETHOD meek_lite socks5 127.0.0.1:";
+	private static final String ISRG_RESOURCE_NAME = "isrg-root-x1.der";
 
 	private static final int CONNECT_TO_PROXY_TIMEOUT = (int) SECONDS.toMillis(5);
 	private static final int EXTRA_CONNECT_TIMEOUT = (int) SECONDS.toMillis(120);
@@ -46,16 +72,23 @@ public class MoatApi {
 
 	private final File lyrebirdExecutable, lyrebirdDir;
 	private final String url, front;
+	private final boolean addIsrgRootCertificate;
 	private final JsonMapper mapper = JsonMapper.builder()
 			.enable(BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
 			.build();
 
 	public MoatApi(File lyrebirdExecutable, File lyrebirdDir, String url, String front) {
+		this(lyrebirdExecutable, lyrebirdDir, url, front, false);
+	}
+
+	public MoatApi(File lyrebirdExecutable, File lyrebirdDir, String url, String front,
+			boolean addIsrgRootCertificate) {
 		if (!lyrebirdDir.isDirectory()) throw new IllegalArgumentException();
 		this.lyrebirdExecutable = lyrebirdExecutable;
 		this.lyrebirdDir = lyrebirdDir;
 		this.url = url;
 		this.front = front;
+		this.addIsrgRootCertificate = addIsrgRootCertificate;
 	}
 
 	public List<Bridges> get() throws IOException {
@@ -75,10 +108,14 @@ public class MoatApi {
 					socksUsername,
 					SOCKS_PASSWORD
 			);
-			OkHttpClient client = new OkHttpClient.Builder()
+			OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
 					.socketFactory(socketFactory)
-					.dns(new NoDns())
-					.build();
+					.dns(new NoDns());
+			if (addIsrgRootCertificate) {
+				X509TrustManager trustManager = createTrustManager();
+				clientBuilder.sslSocketFactory(createSslSocketFactory(trustManager), trustManager);
+			}
+			OkHttpClient client = clientBuilder.build();
 
 			String requestJson = country.isEmpty() ? "" : "{\"country\": \"" + country + "\"}";
 			RequestBody requestBody = RequestBody.create(JSON, requestJson);
@@ -92,6 +129,9 @@ public class MoatApi {
 				throw new IOException("request error");
 			String responseJson = responseBody.string();
 			return parseResponse(responseJson);
+		} catch (CertificateException | NoSuchAlgorithmException | KeyStoreException |
+		         KeyManagementException e) {
+			throw new IOException(e);
 		} finally {
 			lyrebirdProcess.destroy();
 		}
@@ -178,5 +218,135 @@ public class MoatApi {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+	}
+
+	private SSLSocketFactory createSslSocketFactory(X509TrustManager trustManager)
+			throws NoSuchAlgorithmException, KeyManagementException {
+		SSLContext sslContext = SSLContext.getInstance("SSL");
+		sslContext.init(null, new TrustManager[]{trustManager}, new SecureRandom());
+		return sslContext.getSocketFactory();
+	}
+
+	@SuppressWarnings("CustomX509TrustManager")
+	private X509TrustManager createTrustManager() throws IOException, CertificateException,
+			NoSuchAlgorithmException, KeyStoreException {
+		// Find the default X-509 trust manager
+		TrustManagerFactory tmf = TrustManagerFactory.getInstance(getDefaultAlgorithm());
+		// Using null here initialises the TrustManagerFactory with the default trust store.
+		tmf.init((KeyStore) null);
+		X509TrustManager x509 = null;
+		for (TrustManager tm : tmf.getTrustManagers()) {
+			if (tm instanceof X509TrustManager) {
+				x509 = (X509TrustManager) tm;
+				break;
+			}
+		}
+		if (x509 == null) throw new IOException("Could not find default X-509 trust manager");
+		final X509TrustManager delegate = x509;
+
+		// Return a trust manager that includes the root certificate used by Let's Encrypt
+		X509Certificate authority = createX509Certificate();
+		return new X509TrustManager() {
+			@Override
+			public void checkClientTrusted(X509Certificate[] chain, String authType)
+					throws CertificateException {
+				delegate.checkClientTrusted(chain, authType);
+			}
+
+			@Override
+			public void checkServerTrusted(X509Certificate[] chain, String authType)
+					throws CertificateException {
+				LOG.info("Auth type: " + authType);
+				try {
+					delegate.checkServerTrusted(chain, authType);
+					LOG.info("Certificate chain was verified by default trust manager");
+				} catch (CertificateException e) {
+					LOG.info("Certificate chain was not verified by default trust manager: " + e);
+					validateCertificateChain(chain, authority);
+				}
+			}
+
+			@Override
+			public X509Certificate[] getAcceptedIssuers() {
+				X509Certificate[] defaultIssuers = delegate.getAcceptedIssuers();
+				X509Certificate[] allIssuers = new X509Certificate[defaultIssuers.length + 1];
+				arraycopy(defaultIssuers, 0, allIssuers, 0, defaultIssuers.length);
+				allIssuers[defaultIssuers.length] = authority;
+				return allIssuers;
+			}
+		};
+	}
+
+	private X509Certificate createX509Certificate() throws CertificateException {
+		InputStream in = requireNonNull(
+				getClass().getClassLoader().getResourceAsStream(ISRG_RESOURCE_NAME));
+		CertificateFactory certFactory = CertificateFactory.getInstance("X509");
+		X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
+		LOG.info("Adding certificate authority, issuer: " + cert.getIssuerX500Principal().getName()
+				+ ", subject: " + cert.getSubjectX500Principal().getName());
+		return cert;
+	}
+
+	static void validateCertificateChain(X509Certificate[] chain, X509Certificate authority)
+			throws CertificateException {
+		if (chain.length == 0) {
+			throw new CertificateException("Certificate chain is empty");
+		}
+		X509Certificate prev = authority;
+		for (int i = chain.length - 1; i >= 0; i--) {
+			X509Certificate curr = chain[i];
+			LOG.info("Checking subject: " + curr.getSubjectX500Principal().getName());
+			// Check that the certificate is within its validity period
+			curr.checkValidity();
+			// Check that the issuer matches the subject ID and name of the previous certificate
+			if (!Arrays.equals(curr.getIssuerUniqueID(), prev.getSubjectUniqueID())) {
+				throw new CertificateException("Certificate issuer unique ID does not match");
+			}
+			if (!curr.getIssuerX500Principal().getName().equals(
+					prev.getSubjectX500Principal().getName())) {
+				throw new CertificateException("Certificate issuer name does not match");
+			}
+			// Check that the certificate can be used for digital signatures
+			boolean[] keyUsage = curr.getKeyUsage();
+			if (keyUsage.length == 0 || !keyUsage[0]) {
+				throw new CertificateException(
+						"Certificate is not authorised for digital signatures");
+			}
+			// If this is not the leaf certificate, check that is can be used for signing
+			// certificates
+			if (i > 0 && (keyUsage.length < 6 || !keyUsage[5])) {
+				throw new CertificateException(
+						"Certificate is not authorised for signing certificates");
+			}
+			// Check the basic constraints. The number of CA certificates in the chain
+			// following the current certificate is (i - 1).
+			int constraints = curr.getBasicConstraints();
+			int caPathLength = i - 1;
+			if (constraints == -1) {
+				LOG.info("Non-CA certificate");
+				if (i != 0) {
+					throw new CertificateException("Non-CA certificate found at invalid position");
+				}
+			} else if (i == 0) {
+				throw new CertificateException("CA certificate found at invalid position");
+			} else {
+				LOG.info("CA certificate with maximum CA path length: " + constraints);
+				if (constraints < caPathLength) {
+					throw new CertificateException("CA certificate has maximum CA path length: "
+							+ constraints + ", needed: " + caPathLength);
+				}
+			}
+			// Check that the certificate was signed by the public key of the previous
+			// certificate
+			try {
+				curr.verify(prev.getPublicKey());
+			} catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException |
+			         NoSuchProviderException e1) {
+				throw new CertificateException(e1);
+			}
+			// All good, move on to the next certificate in the chain
+			prev = curr;
+		}
+		LOG.info("Certificate chain accepted");
 	}
 }

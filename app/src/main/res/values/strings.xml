@@ -6,5 +6,4 @@
 	<string name="bridge_source">Source: %1s</string>
 	<string name="bridge_type">Type: %1s</string>
 	<string name="bridge_line">Bridge: %1s</string>
-	<string name="azure">Use Azure domain front</string>
 </resources>
